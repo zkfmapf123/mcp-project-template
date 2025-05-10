@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+
+	ct "context"
 
 	"github.com/go-mcp/internal/context"
 	"github.com/go-mcp/internal/model"
@@ -17,8 +20,10 @@ type Server struct {
 	app            *fiber.App
 
 	// Models
-	// simpelModel  *model.SimpleModel
 	chatGPTModel *model.ChatGPTModel
+
+	// 취소 가능 여부
+	activeConextModelIds map[string]ct.CancelFunc
 }
 
 func NewServer() *Server {
@@ -29,8 +34,9 @@ func NewServer() *Server {
 	server := &Server{
 		contextManager: context.NewManager(),
 		// simpelModel:    model.NewSimpleModel("xxxxxxxxxxxxxxxxxxxxxxxxx"),
-		chatGPTModel: model.NewChatGPTModel(os.Getenv("CHATGPT_KEY")),
-		app:          app,
+		chatGPTModel:         model.NewChatGPTModel(os.Getenv("CHATGPT_KEY")),
+		app:                  app,
+		activeConextModelIds: map[string]ct.CancelFunc{},
 	}
 
 	app.Use(logger.New())
@@ -58,26 +64,49 @@ func (s *Server) handleMessage(c *fiber.Ctx) error {
 		message.ContextID = ctx.ID // ctx 대화에 넣기
 	}
 
-	// response, err := s.simpelModel.ProcessMessage(message, ctx)
-	response, err := s.chatGPTModel.ProcessMessage(message, ctx)
-	if err != nil {
+	// 취소 context 생성
+	processCtx, cancel := ct.WithCancel(ct.Background())
+	s.activeConextModelIds[message.ContextID] = cancel
+
+	responseChan, errChan := make(chan protocol.ModelResponse), make(chan error)
+
+	go func() {
+		response, err := s.chatGPTModel.ProcessMessage(message, ctx)
+		if err != nil {
+			errChan <- err
+		}
+		responseChan <- response
+	}()
+
+	select {
+	// 성공
+	case resp := <-responseChan:
+		delete(s.activeConextModelIds, message.ContextID)
+		ctx.Messages = append(ctx.Messages, message)      // 질문 추가
+		ctx.Messages = append(ctx.Messages, resp.Message) // 답변 추가
+
+		fmt.Println(ctx.Messages)
+
+		return c.JSON(resp)
+
+		// 실패
+	case err := <-errChan:
+		delete(s.activeConextModelIds, message.ContextID)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to process message",
+			"error": err.Error(),
+		})
+		// 끝
+	case <-processCtx.Done():
+		delete(s.activeConextModelIds, message.ContextID)
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status": "stopped",
 		})
 	}
-
-	ctx.Messages = append(ctx.Messages, message)          // 질문 추가
-	ctx.Messages = append(ctx.Messages, response.Message) // 답변 추가
-	if err := s.contextManager.UpdateContext(ctx); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update context",
-		})
-	}
-
-	// utils.PrettyPrint(s.contextManager.GetMessages())
-
-	return c.JSON(response)
 }
+
+// func (s *Server) handleStop(c *fiber.Ctx) error {
+// 	message := dg.JsonParse[protocol.Message](c.Body())
+// }
 
 func (s *Server) Start(addr string) error {
 	return s.app.Listen(addr)
