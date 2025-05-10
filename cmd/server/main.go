@@ -16,8 +16,8 @@ type Server struct {
 	contextManager *context.Manager
 	app            *fiber.App
 
-	// SimpleModels
-	simpelModel  *model.SimpleModel
+	// Models
+	// simpelModel  *model.SimpleModel
 	chatGPTModel *model.ChatGPTModel
 }
 
@@ -28,9 +28,9 @@ func NewServer() *Server {
 
 	server := &Server{
 		contextManager: context.NewManager(),
-		simpelModel:    model.NewSimpleModel("xxxxxxxxxxxxxxxxxxxxxxxxx"),
-		chatGPTModel:   model.NewChatGPTModel(os.Getenv("CHATGPT_KEY")),
-		app:            app,
+		// simpelModel:    model.NewSimpleModel("xxxxxxxxxxxxxxxxxxxxxxxxx"),
+		chatGPTModel: model.NewChatGPTModel(os.Getenv("CHATGPT_KEY")),
+		app:          app,
 	}
 
 	app.Use(logger.New())
