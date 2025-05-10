@@ -5,6 +5,7 @@ go 1.24.3
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/google/uuid v1.6.0
+	github.com/sashabaranov/go-openai v1.39.1
 	github.com/zkfmapf123/donggo v0.0.3
 )
 

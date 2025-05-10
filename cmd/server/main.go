@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/go-mcp/internal/context"
 	"github.com/go-mcp/internal/model"
@@ -16,7 +17,8 @@ type Server struct {
 	app            *fiber.App
 
 	// SimpleModels
-	simpelModel *model.SimpleModel
+	simpelModel  *model.SimpleModel
+	chatGPTModel *model.ChatGPTModel
 }
 
 func NewServer() *Server {
@@ -27,6 +29,7 @@ func NewServer() *Server {
 	server := &Server{
 		contextManager: context.NewManager(),
 		simpelModel:    model.NewSimpleModel("xxxxxxxxxxxxxxxxxxxxxxxxx"),
+		chatGPTModel:   model.NewChatGPTModel(os.Getenv("CHATGPT_KEY")),
 		app:            app,
 	}
 
@@ -55,7 +58,8 @@ func (s *Server) handleMessage(c *fiber.Ctx) error {
 		message.ContextID = ctx.ID // ctx 대화에 넣기
 	}
 
-	response, err := s.simpelModel.ProcessMessage(message, ctx)
+	// response, err := s.simpelModel.ProcessMessage(message, ctx)
+	response, err := s.chatGPTModel.ProcessMessage(message, ctx)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to process message",
