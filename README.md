@@ -28,6 +28,14 @@ type Message struct {
     TimeStamp time.Time `json:"timestamp"`
     ContextID string    `json:"context_id"`
 }
+
+|- contextID
+    |- messageId
+    |- messageId
+    |- messageId
+    |- messageId
+    |- messageId
+    ...
 ```
 
 ### Protocol Buffers

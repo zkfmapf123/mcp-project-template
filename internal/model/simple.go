@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-mcp/pkg/protocol"
@@ -20,8 +21,8 @@ func (m *SimpleModel) ProcessMessage(message protocol.Message, mcf protocol.Mess
 	// 여기에 메시지 처리 로직 구현
 	response := protocol.ModelResponse{
 		Message: protocol.Message{
-			ID:        message.ID,
-			Content:   "Simple model response >> " + message.Content,
+			ID:        fmt.Sprintf("%s__response", message.ID),
+			Content:   "응답해줘야 함",
 			TimeStamp: time.Now(),
 			ContextID: mcf.ID,
 		},

@@ -26,7 +26,7 @@ func (m *Manager) CreateContext() (protocol.MessageContextFlow, error) {
 
 	now := time.Now()
 	context := protocol.MessageContextFlow{
-		ID:        generateID(),
+		ID:        GenerateID(),
 		Messages:  make([]protocol.Message, 0),
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -73,7 +73,7 @@ func (m *Manager) CurrentFlowsCount() int {
 	return len(m.mcfContextManager)
 }
 
-func generateID() string {
+func GenerateID() string {
 	return uuid.NewString()
 }
 

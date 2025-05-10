@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/go-mcp/internal/context"
 	"github.com/go-mcp/internal/model"
-	"github.com/go-mcp/internal/utils"
 	"github.com/go-mcp/pkg/protocol"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -42,7 +40,9 @@ func NewServer() *Server {
 func (s *Server) handleMessage(c *fiber.Ctx) error {
 	message := dg.JsonParse[protocol.Message](c.Body())
 
-	fmt.Println("context number : ", s.contextManager.CurrentFlowsCount())
+	// create meesage Id (inject)
+	messageId := context.GenerateID()
+	message.ID = messageId
 
 	ctx, err := s.contextManager.GetContext(message.ContextID)
 	if err != nil {
@@ -52,7 +52,7 @@ func (s *Server) handleMessage(c *fiber.Ctx) error {
 				"error": "Failed to create context",
 			})
 		}
-		message.ContextID = ctx.ID
+		message.ContextID = ctx.ID // ctx 대화에 넣기
 	}
 
 	response, err := s.simpelModel.ProcessMessage(message, ctx)
@@ -70,7 +70,7 @@ func (s *Server) handleMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	utils.PrettyPrint(s.contextManager.GetMessages())
+	// utils.PrettyPrint(s.contextManager.GetMessages())
 
 	return c.JSON(response)
 }
