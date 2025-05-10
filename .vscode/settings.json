@@ -1,0 +1,32 @@
+{
+    "go.useLanguageServer": true,
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": ["--fast"],
+    "go.formatTool": "goimports",
+    "go.testOnSave": false,
+    "go.coverOnSave": false,
+    "go.vetOnSave": "workspace",
+
+    "[go]": {
+      "editor.formatOnSave": true,
+      "editor.snippetSuggestions": "none",
+      "editor.defaultFormatter": "golang.go",
+      "editor.rulers": [120],
+      "editor.wordWrapColumn": 120
+    },
+
+    "files.eol": "\n",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+
+    "gopls": {
+      "usePlaceholders": true,
+      "staticcheck": true,
+      "analyses": {
+        "unusedparams": true,
+        "shadow": true
+      },
+      "formatting.local": "examples",
+      "formatting.gofumpt": true
+    }
+  }
