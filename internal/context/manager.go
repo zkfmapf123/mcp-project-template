@@ -82,7 +82,7 @@ func (m *Manager) GetMessages() map[string][]string {
 
 	for _, contextManager := range m.mcfContextManager {
 		for _, context := range contextManager.Messages {
-			msg[contextManager.ID] = append(msg[contextManager.ID], context.Content)
+			msg[contextManager.ID] = append(msg[contextManager.ID], context.ID+context.Content)
 		}
 	}
 
