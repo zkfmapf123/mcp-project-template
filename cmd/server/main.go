@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -42,6 +41,7 @@ func NewServer() *Server {
 	app.Use(logger.New())
 	app.Static("/", "./web/static")
 	app.Post("/message", server.handleMessage)
+	app.Post("/stop", server.handleStop)
 
 	return server
 }
@@ -85,8 +85,13 @@ func (s *Server) handleMessage(c *fiber.Ctx) error {
 		ctx.Messages = append(ctx.Messages, message)      // 질문 추가
 		ctx.Messages = append(ctx.Messages, resp.Message) // 답변 추가
 
-		fmt.Println(ctx.Messages)
+		if err := s.contextManager.UpdateContext(ctx); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to update context",
+			})
+		}
 
+		// utils.PrettyPrint(s.contextManager.GetMessages())
 		return c.JSON(resp)
 
 		// 실패
@@ -104,9 +109,28 @@ func (s *Server) handleMessage(c *fiber.Ctx) error {
 	}
 }
 
-// func (s *Server) handleStop(c *fiber.Ctx) error {
-// 	message := dg.JsonParse[protocol.Message](c.Body())
-// }
+func (s *Server) handleStop(c *fiber.Ctx) error {
+	message := dg.JsonParse[protocol.Message](c.Body())
+	contextId := message.ContextID
+
+	if contextId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request format",
+		})
+	}
+
+	if cancel, exists := s.activeConextModelIds[contextId]; exists {
+		cancel()
+		delete(s.activeConextModelIds, contextId)
+		return c.JSON(fiber.Map{
+			"status": "stopped",
+		})
+	}
+
+	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		"error": "No active request found for this context",
+	})
+}
 
 func (s *Server) Start(addr string) error {
 	return s.app.Listen(addr)

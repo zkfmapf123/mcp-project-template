@@ -7,7 +7,7 @@ type Message struct {
 	ID        string    `json:"id"`
 	Content   string    `json:"content"`
 	TimeStamp time.Time `json:"timestamp"`
-	ContextID string    `json:"contextId"` // 대화의 전체 ID
+	ContextID string    `json:"context_id"` // 대화의 전체 ID
 }
 
 // 대화의 전체적인 흐름

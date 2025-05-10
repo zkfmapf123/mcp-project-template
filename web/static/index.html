@@ -384,6 +384,9 @@
 
         // 메시지 요소 생성 함수
         function createMessageElement(message, isUser) {
+            if (!message || typeof message.content !== 'string' || message.content.trim() === '') {
+                return null;
+            }
             const div = document.createElement('div');
             div.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
             if (isUser) {
@@ -391,6 +394,8 @@
             }
             return div;
         }
+
+        let stopped = false; // 중지 상태 플래그
 
         // 메시지 전송 함수
         async function sendMessage() {
@@ -410,8 +415,7 @@
             // 중지 버튼 이벤트 리스너
             stopButton.onclick = async () => {
                 try {
-                    // 서버에 중지 요청
-                    const response = await fetch('/stop', {
+                    await fetch('/stop', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -420,37 +424,34 @@
                             context_id: contextId.value
                         })
                     });
-
-                    if (!response.ok) {
-                        throw new Error('중지 요청 실패');
-                    }
-
-                    // 클라이언트 요청 중단
                     controller.abort();
+                    stopped = true; // 중지 상태로 표시
                     stopButton.classList.remove('active');
                     loading.classList.remove('active');
                     messageInput.disabled = false;
-
-                    // 중지 메시지 표시
-                    const stopMessage = createMessageElement({ content: '메시지 생성이 중지되었습니다.' }, false);
-                    messagesDiv.appendChild(stopMessage);
                     scrollToBottom();
-
                 } catch (error) {
                     console.error('중지 요청 실패:', error);
                     alert('중지 요청 중 오류가 발생했습니다.');
                 }
             };
 
+            stopped = false; // 새 메시지 전송 시 중지 상태 초기화
+
+            // 사용자 메시지 추가 (중지 상태가 아니면)
+            let userMessage = null;
+            if (!stopped) {
+                userMessage = createMessageElement({ content }, true);
+                if (userMessage) {
+                    messagesDiv.appendChild(userMessage);
+                    scrollToBottom();
+                }
+            }
+
             try {
                 loading.classList.add('active');
                 stopButton.classList.add('active');
                 messageInput.disabled = true;
-
-                // 사용자 메시지 추가
-                const userMessage = createMessageElement({ content }, true);
-                messagesDiv.appendChild(userMessage);
-                scrollToBottom();
 
                 // 서버로 메시지 전송
                 const response = await fetch('/message', {
@@ -470,13 +471,21 @@
                 }
 
                 const data = await response.json();
-                console.log('서버 응답:', data);
 
-                // 봇 응답 추가 (타이핑 효과 적용)
-                const botMessage = createMessageElement(data.message, false);
-                messagesDiv.appendChild(botMessage);
-                scrollToBottom();
-                await typeMessage(botMessage, data.message.content);
+                // 중지된 경우 아무 메시지도 추가하지 않고 바로 return
+                if (data.status === 'stopped') {
+                    return;
+                }
+
+                // 봇 메시지 추가 (content가 있을 때만)
+                if (data.message && typeof data.message.content === 'string' && data.message.content.trim() !== '') {
+                    const botMessage = createMessageElement(data.message, false);
+                    if (botMessage) {
+                        messagesDiv.appendChild(botMessage);
+                        scrollToBottom();
+                        await typeMessage(botMessage, data.message.content);
+                    }
+                }
 
                 // 컨텍스트 ID 업데이트
                 if (data.context_id) {
@@ -488,15 +497,14 @@
 
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    console.log('메시지 생성이 중지되었습니다.');
-                    // 중지된 상태를 표시하는 메시지 추가
-                    const stopMessage = createMessageElement({ content: '메시지 생성이 중지되었습니다.' }, false);
-                    messagesDiv.appendChild(stopMessage);
-                    scrollToBottom();
-                } else {
-                    console.error('메시지 전송 오류:', error);
-                    alert('메시지 전송 중 오류가 발생했습니다.');
+                    // 중지 시, 이미 추가된 userMessage가 있으면 삭제
+                    if (userMessage && messagesDiv.lastChild === userMessage) {
+                        messagesDiv.removeChild(userMessage);
+                    }
+                    return;
                 }
+                console.error('메시지 전송 오류:', error);
+                alert('메시지 전송 중 오류가 발생했습니다.');
             } finally {
                 loading.classList.remove('active');
                 stopButton.classList.remove('active');
