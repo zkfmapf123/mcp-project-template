@@ -4,8 +4,8 @@ MCP는 대화형 AI 모델과의 통신을 위한 프로토콜과 구현체를 �
 
 ## Branch
 
-- <a href="https://github.com/zkfmapf123/mcp-project-template/tree/mcp/go"> MCP-Go </a>
-- <a href="https://github.com/zkfmapf123/mcp-project-template/tree/mcp/ts"> MCP-TS </a>
+- <a href="https://github.com/zkfmapf123/mcp-project-template/tree/mcp/go"> MCP-Golang </a>
+- <a href="https://github.com/zkfmapf123/mcp-project-template/tree/mcp/ts"> MCP-Typescript </a>
 
 ## 프로젝트 구조
 
